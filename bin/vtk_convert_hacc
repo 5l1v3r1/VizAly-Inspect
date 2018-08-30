@@ -1,0 +1,104 @@
+#! /usr/bin/env python
+""" Converts HACC dataset to a VTK dataset.
+"""
+
+import argparse
+import genericio
+import logging
+import numpy
+import vtk
+
+class CosmologyData(object):
+    """ Class that reads and holds data from a single file of cosmology simulation data.
+    """
+
+    position_fields = ["x", "y", "z"]
+    velocity_fields = ["vx", "vy", "vz"]
+    scalar_fields = ["phi"]
+
+    def __init__(self, input_file):
+        self.input_file = input_file
+        for field in self.position_fields + self.velocity_fields + self.scalar_fields:
+            setattr(self, field, genericio.gio_read(self.input_file, field).flatten())
+
+# parse command line
+parser = argparse.ArgumentParser()
+parser.add_argument("--input-file", required=True)
+parser.add_argument("--output-file", required=True)
+parser.add_argument("--header-type", type=int, default=32)
+parser.add_argument("--encode-type", type=int, default=0)
+parser.add_argument("--random-samples", type=int, default=None)
+parser.add_argument("--compressor-type", type=int, choices=[0, 1, 2, 3], default=0)
+parser.add_argument("--seed", type=int, default=0)
+parser.add_argument("--inspect", action="store_true")
+opts = parser.parse_args()
+
+# inspect file
+if opts.inspect:
+    genericio.gio_inspect(opts.input_file)
+
+# set up log
+logging.basicConfig(format="%(asctime)s : %(levelname)s : %(message)s",
+                    level=logging.DEBUG)
+
+# read data
+logging.info("Reading data from {}".format(opts.input_file))
+data = CosmologyData(opts.input_file)
+
+# select random samples
+if opts.random_samples:
+    logging.info("Selecting {} random samples".format(opts.random_samples))
+    seed = numpy.random.seed(opts.seed)
+    idxs = numpy.random.randint(0, data.x.size, size=opts.random_samples)
+    for field in data.position_fields + data.velocity_fields + data.scalar_fields:
+        arr = getattr(data, field)
+        setattr(data, field, arr[idxs])
+
+# create data points
+logging.info("Creating data points")
+points = vtk.vtkPoints()
+for pt in zip(data.x, data.y, data.z):
+    points.InsertNextPoint(pt)
+
+# create an unstructured grid
+logging.info("Creating unstructured grid")
+ug = vtk.vtkUnstructuredGrid()
+ug.SetPoints(points)
+
+# create scalar
+logging.info("Adding scalar fields")
+for field in data.scalar_fields:
+    scalar = vtk.vtkFloatArray()
+    scalar.SetNumberOfComponents(1)
+    scalar.SetName(field)
+    arr = getattr(data, field)
+    for elem in arr:
+        scalar.InsertNextValue(elem)
+    ug.GetPointData().AddArray(scalar)
+
+# create velocity
+logging.info("Adding velocity fields")
+velocity = vtk.vtkFloatArray()
+velocity.SetNumberOfComponents(3)
+velocity.SetName("velocity")
+arr = getattr(data, field)
+for elem in zip(data.vx, data.vy, data.vz):
+    velocity.InsertNextTuple(elem)
+ug.GetPointData().AddArray(velocity)
+
+# create writer
+logging.info("Creating writer")
+writer = vtk.vtkXMLUnstructuredGridWriter()
+writer.SetInputData(ug)
+writer.SetFileName(opts.output_file)
+writer.SetHeaderType(opts.header_type)
+writer.SetEncodeAppendedData(opts.encode_type)
+writer.SetCompressorType(opts.compressor_type)
+
+# write
+logging.info("Writing data to {}".format(opts.output_file))
+writer.Write()
+
+# done
+logging.info("Finished")
+
