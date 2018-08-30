@@ -52,4 +52,5 @@ make
 #python setup.py install
 
 # update environment
-echo "export PYTHONPATH=${VIRTUAL_ENV}:${VIRTUAL_ENV}/src/genericio/python" >> ${VIRTUAL_ENV}/bin/activate
+echo "export PYTHONPATH=${VIRTUAL_ENV}/src/genericio/python:${PYTHONPATH}" >> ${VIRTUAL_ENV}/bin/activate
+echo "export DYLD_LIBRARY_PATH=${VIRTUAL_ENV}/lib:${DYLD_LIBRARY_PATH}" >> ${VIRTUAL_ENV}/bin/activate
