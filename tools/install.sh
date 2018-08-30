@@ -24,7 +24,7 @@ source ${INSTALL_DIR}/bin/activate
 # install Python packages
 pip install numpy
 
-# install vtk
+# install VTK
 mkdir -p ${VIRTUAL_ENV}/src
 cd ${VIRTUAL_ENV}/src
 git clone -b ${VTK_VERSION} https://gitlab.kitware.com/vtk/vtk.git
