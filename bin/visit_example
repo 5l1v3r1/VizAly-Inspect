@@ -1,0 +1,7 @@
+""" Example command:
+${HOME}/Applications/VisIt.app/Contents/MacOS/VisIt -nowin -cli -s bin/visit_example
+"""
+
+import visit
+
+print visit
