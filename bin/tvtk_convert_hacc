@@ -1,0 +1,47 @@
+#! /usr/bin/env python
+""" Converts a HACC dataset to a VTK dataset.
+"""
+
+import argparse
+import genericio
+import numpy
+from tvtk import api
+from tvtk.api import tvtk
+
+# default values
+DEFAULT_COORDS = [
+    "x", "y", "z",
+]
+DEFAULT_SCALARS = [
+    "vx", "vy", "vz",
+]
+
+# parse command line
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--input-file", required=True)
+parser.add_argument("--output-file", required=True)
+parser.add_argument("--coordinates", nargs="+", default=DEFAULT_COORDS)
+parser.add_argument("--scalars", nargs="+", default=DEFAULT_SCALARS)
+opts = parser.parse_args()
+
+# create a (ndims, npoints) for spatial coordinates
+coords = []
+for i, name in enumerate(opts.coordinates):
+    coords.append(genericio.gio_read(opts.input_file, name).flatten())
+coords = numpy.vstack(coords)
+
+# create mesh
+mesh = tvtk.PolyData()
+mesh.points = numpy.transpose(coords)
+
+# add scalar values
+scalars = []
+for i, name in enumerate(opts.scalars):
+    data = genericio.gio_read(opts.input_file, name).flatten()
+    arr = tvtk.FloatArray()
+    arr.from_array(data)
+    arr.name = name
+    mesh.point_data.add_array(arr)
+
+# write output file
+api.write_data(mesh, opts.output_file)
