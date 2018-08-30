@@ -1,7 +1,56 @@
+#! /usr/bin/env python
 """ Example command:
 ${HOME}/Applications/VisIt.app/Contents/MacOS/VisIt -nowin -cli -s bin/visit_example
 """
 
+import argparse
 import visit
 
-print visit
+# parse command line
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--input-file")
+parser.add_argument("--output-file")
+parser.add_argument("--scalar")
+opts = parser.parse_args()
+
+# read data
+visit.OpenDatabase(opts.input_file)
+
+# set view
+visit.ResetView()
+view = GetView3D()
+view.RotateAxis(0, 44)
+view.RotateAxis(1, -23)
+visit.SetView3D(view)
+
+# plot
+visit.AddPlot("Pseudocolor", opts.scalar)
+
+# resample
+visit.AddOperator("Resample", 1)
+resample_attrs = visit.ResampleAttributes()
+resample_attrs.samplesX = 10
+resample_attrs.samplesY = 10
+resample_attrs.samplesZ = 10
+SetOperatorOptions(resample_attrs)
+
+# clip
+visit.AddOperator("Clip", 1)
+clip_attrs = visit.ClipAttributes()
+clip_attrs.SetQuality(1)
+clip_attrs.SetPlane1Origin(5, 0, 0)
+clip_attrs.SetPlane2Status(1)
+clip_attrs.SetPlane2Origin(0, 5, 0)
+clip_attrs.SetPlane3Status(1)
+clip_attrs.SetPlane3Origin(0, 0, 5)
+SetOperatorOptions(clip_attrs)
+
+# draw
+visit.DrawPlots()
+
+# save
+swin = SaveWindowAttributes()
+swin.family = 0
+swin.fileName = opts.output_file
+visit.SetSaveWindowAttributes(swin)
+visit.SaveWindow()
