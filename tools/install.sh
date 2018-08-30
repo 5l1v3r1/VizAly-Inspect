@@ -1,4 +1,4 @@
-#!/bin/bash
+#! /bin/bash
 
 # versions to install
 VTK_VERSION=v8.1.1
