@@ -18,28 +18,14 @@ unset PYTHONPATH
 set -e
 
 # setup virtual environment
-virtualenv ${INSTALL_DIR}
+virtualenv --python `which python3` ${INSTALL_DIR}
 source ${INSTALL_DIR}/bin/activate
 
 # install Python packages
-pip install numpy
-
-# install VTK
-mkdir -p ${VIRTUAL_ENV}/src
-cd ${VIRTUAL_ENV}/src
-git clone -b ${VTK_VERSION} https://gitlab.kitware.com/vtk/vtk.git
-cd vtk
-mkdir build
-cd build
-cmake \
-    -DBUILD_TESTING=OFF \
-    -DCMAKE_INSTALL_PREFIX:PATH="${VIRTUAL_ENV}" \
-    -DCMAKE_CXX_FLAGS="-L${VIRTUAL_ENV}/lib" \
-    -DINSTALL_LIB_DIR:PATH="${VIRTUAL_ENV}/lib" \
-    -DBUILD_SHARED_LIBS=ON \
-    -DVTK_WRAP_PYTHON=ON ..
-make -j 8
-make install
+pip3 install pyqt5
+pip3 install numpy
+pip3 install vtk
+pip3 install mayavi
 
 # install GenericIO
 cd ${VIRTUAL_ENV}/src
@@ -47,10 +33,5 @@ git clone http://git.mcs.anl.gov/genericio.git
 cd genericio
 make
 
-## install package
-#cd ${INIT_DIR}
-#python setup.py install
-
 # update environment
 echo "export PYTHONPATH=${VIRTUAL_ENV}/src/genericio/python:${PYTHONPATH}" >> ${VIRTUAL_ENV}/bin/activate
-echo "export DYLD_LIBRARY_PATH=${VIRTUAL_ENV}/lib:${DYLD_LIBRARY_PATH}" >> ${VIRTUAL_ENV}/bin/activate
