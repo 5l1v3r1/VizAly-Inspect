@@ -35,6 +35,14 @@ resample_attrs.samplesY = 10
 resample_attrs.samplesZ = 10
 SetOperatorOptions(resample_attrs)
 
+# write empty Cinema database
+os.mkdir(opts.output_file)
+data_file = opts.output_file + "/data.csv"
+with open(data_file, "w") as fp:
+    header = ",".join(map(str, ["x_threshold", "y_threshold", "z_threshold",
+                                "FILE"]))
+    fp.write(header)
+
 # loop over clipping planes
 x_thresholds = numpy.arange(1, 20 + 1, 1)
 y_thresholds = numpy.arange(1, 20 + 1, 1)
@@ -47,20 +55,33 @@ for x_threshold in x_thresholds:
             visit.AddOperator("Clip", 1)
             clip_attrs = visit.ClipAttributes()
             clip_attrs.SetQuality(1)
-            clip_attrs.SetPlane1Origin(5, 0, 0)
+            clip_attrs.SetPlane1Origin(x_threshold, 0, 0)
             clip_attrs.SetPlane2Status(1)
-            clip_attrs.SetPlane2Origin(0, 5, 0)
+            clip_attrs.SetPlane2Origin(0, y_threshold, 0)
             clip_attrs.SetPlane3Status(1)
-            clip_attrs.SetPlane3Origin(0, 0, 5)
+            clip_attrs.SetPlane3Origin(0, 0, z_threshold)
             SetOperatorOptions(clip_attrs)
 
             # draw
             visit.DrawPlots()
 
+            # get image path
+            filename = "test_{}_{}_{}.png".format(
+                                x_threshold, y_threshold, z_threshold)
+            path = opts.output_file + "/" + filename
+
             # save
             swin = SaveWindowAttributes()
             swin.family = 0
-            swin.fileName = "test_{}_{}_{}.png".format(
-                                x_threshold, y_threshold, z_threshold)
+            swin.fileName = path
             visit.SetSaveWindowAttributes(swin)
             visit.SaveWindow()
+
+            # update Cinema database
+            with open(data_file, "a") as fp:
+                line = ",".join(map(str, [x_threshold, y_threshold,
+                                          z_threshold, filename]))
+                fp.write("\n" + line)
+
+            # remove clip
+            visit.RemoveOperator(1)
