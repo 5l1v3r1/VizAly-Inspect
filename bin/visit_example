@@ -4,6 +4,7 @@ ${HOME}/Applications/VisIt.app/Contents/MacOS/VisIt -nowin -cli -s bin/visit_exa
 """
 
 import argparse
+import numpy
 import visit
 
 # parse command line
@@ -34,23 +35,32 @@ resample_attrs.samplesY = 10
 resample_attrs.samplesZ = 10
 SetOperatorOptions(resample_attrs)
 
-# clip
-visit.AddOperator("Clip", 1)
-clip_attrs = visit.ClipAttributes()
-clip_attrs.SetQuality(1)
-clip_attrs.SetPlane1Origin(5, 0, 0)
-clip_attrs.SetPlane2Status(1)
-clip_attrs.SetPlane2Origin(0, 5, 0)
-clip_attrs.SetPlane3Status(1)
-clip_attrs.SetPlane3Origin(0, 0, 5)
-SetOperatorOptions(clip_attrs)
+# loop over clipping planes
+x_thresholds = numpy.arange(1, 20 + 1, 1)
+y_thresholds = numpy.arange(1, 20 + 1, 1)
+z_thresholds = numpy.arange(1, 20 + 1, 1)
+for x_threshold in x_thresholds:
+    for y_threshold in y_thresholds:
+        for z_threshold in z_thresholds:
 
-# draw
-visit.DrawPlots()
+            # clip
+            visit.AddOperator("Clip", 1)
+            clip_attrs = visit.ClipAttributes()
+            clip_attrs.SetQuality(1)
+            clip_attrs.SetPlane1Origin(5, 0, 0)
+            clip_attrs.SetPlane2Status(1)
+            clip_attrs.SetPlane2Origin(0, 5, 0)
+            clip_attrs.SetPlane3Status(1)
+            clip_attrs.SetPlane3Origin(0, 0, 5)
+            SetOperatorOptions(clip_attrs)
 
-# save
-swin = SaveWindowAttributes()
-swin.family = 0
-swin.fileName = opts.output_file
-visit.SetSaveWindowAttributes(swin)
-visit.SaveWindow()
+            # draw
+            visit.DrawPlots()
+
+            # save
+            swin = SaveWindowAttributes()
+            swin.family = 0
+            swin.fileName = "test_{}_{}_{}.png".format(
+                                x_threshold, y_threshold, z_threshold)
+            visit.SetSaveWindowAttributes(swin)
+            visit.SaveWindow()
