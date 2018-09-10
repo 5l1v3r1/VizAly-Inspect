@@ -12,6 +12,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--input-file")
 parser.add_argument("--output-file")
 parser.add_argument("--scalar")
+parser.add_argument("--resample-method", default="sph")
 opts = parser.parse_args()
 
 # read data
@@ -24,16 +25,51 @@ view.RotateAxis(0, 44)
 view.RotateAxis(1, -23)
 visit.SetView3D(view)
 
-# plot
+# plot scalar
 visit.AddPlot("Pseudocolor", opts.scalar)
 
+# format plot
+plot_attrs = visit.PseudocolorAttributes()
+plot_attrs.SetColorTableName("Greys")
+plot_attrs.SetLightingFlag(0)
+SetPlotOptions(plot_attrs)
+
+## plot mesh
+#visit.AddPlot("Mesh", "mesh")
+
 # resample
-visit.AddOperator("Resample", 1)
-resample_attrs = visit.ResampleAttributes()
-resample_attrs.samplesX = 10
-resample_attrs.samplesY = 10
-resample_attrs.samplesZ = 10
-SetOperatorOptions(resample_attrs)
+if opts.resample_method == "test":
+    visit.AddOperator("Resample", 1)
+    resample_attrs = visit.ResampleAttributes()
+    resample_attrs.samplesX = 10
+    resample_attrs.samplesY = 10
+    resample_attrs.samplesZ = 10
+    SetOperatorOptions(resample_attrs)
+elif opts.resample_method == "sph":
+    visit.AddOperator("SPHResample", 1)
+    resample_attrs = visit.SPHResampleAttributes()
+    resample_attrs.SetMaxX(20)
+    resample_attrs.SetMaxY(20)
+    resample_attrs.SetMaxZ(20)
+    resample_attrs.SetXnum(20)
+    resample_attrs.SetYnum(20)
+    resample_attrs.SetZnum(20)
+    resample_attrs.SetTensorSupportVariable("hh")
+    resample_attrs.SetWeightVariable("mass")
+    SetOperatorOptions(resample_attrs)
+else:
+    raise NotImplementedError("Unknown {}".format(opts.resample_method))
+
+# clip
+visit.AddOperator("Clip", 1)
+clip_attrs = visit.ClipAttributes()
+clip_attrs.SetQuality(1)
+clip_attrs.SetPlane1Origin(0, 0, 0)
+clip_attrs.SetPlane2Status(1)
+clip_attrs.SetPlane2Origin(0, 0, 0)
+clip_attrs.SetPlane3Status(1)
+clip_attrs.SetPlane3Origin(0, 0, 0)
+SetOperatorOptions(clip_attrs)
 
 # write empty Cinema database
 os.mkdir(opts.output_file)
@@ -44,6 +80,7 @@ with open(data_file, "w") as fp:
     fp.write(header)
 
 # loop over clipping planes
+first = True
 x_thresholds = numpy.arange(1, 20 + 1, 1)
 y_thresholds = numpy.arange(1, 20 + 1, 1)
 z_thresholds = numpy.arange(1, 20 + 1, 1)
@@ -52,13 +89,8 @@ for x_threshold in x_thresholds:
         for z_threshold in z_thresholds:
 
             # clip
-            visit.AddOperator("Clip", 1)
-            clip_attrs = visit.ClipAttributes()
-            clip_attrs.SetQuality(1)
             clip_attrs.SetPlane1Origin(x_threshold, 0, 0)
-            clip_attrs.SetPlane2Status(1)
             clip_attrs.SetPlane2Origin(0, y_threshold, 0)
-            clip_attrs.SetPlane3Status(1)
             clip_attrs.SetPlane3Origin(0, 0, z_threshold)
             SetOperatorOptions(clip_attrs)
 
@@ -83,5 +115,5 @@ for x_threshold in x_thresholds:
                                           z_threshold, filename]))
                 fp.write("\n" + line)
 
-            # remove clip
-            visit.RemoveOperator(1)
+            ## remove clip
+            #visit.RemoveOperator(1)
