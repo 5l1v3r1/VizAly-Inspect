@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-""" Converts a HACC dataset to a VTK dataset.
+""" Converts a HACC dataset to a VTP dataset.
 """
 
 import argparse
@@ -13,7 +13,7 @@ DEFAULT_COORDS = [
     "x", "y", "z",
 ]
 DEFAULT_SCALARS = [
-    "vx", "vy", "vz",
+    "hh", "mass", "vx", "vy", "vz",
 ]
 
 # parse command line
@@ -22,7 +22,12 @@ parser.add_argument("--input-file", required=True)
 parser.add_argument("--output-file", required=True)
 parser.add_argument("--coordinates", nargs="+", default=DEFAULT_COORDS)
 parser.add_argument("--scalars", nargs="+", default=DEFAULT_SCALARS)
+parser.add_argument("--inspect", action="store_true")
 opts = parser.parse_args()
+
+# print inspection
+if opts.inspect:
+    genericio.gio_inspect(opts.input_file)
 
 # create a (ndims, npoints) for spatial coordinates
 coords = []
@@ -34,7 +39,7 @@ coords = numpy.vstack(coords)
 mesh = tvtk.PolyData()
 mesh.points = numpy.transpose(coords)
 
-# add scalar values
+# add scalar values to points
 scalars = []
 for i, name in enumerate(opts.scalars):
     data = genericio.gio_read(opts.input_file, name).flatten()
