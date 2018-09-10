@@ -26,6 +26,13 @@ with open(data_file, "w") as fp:
                                 "FILE"]))
     fp.write(header)
 
+# set view
+visit.ResetView()
+view = GetView3D()
+view.RotateAxis(0, 44)
+view.RotateAxis(1, -23)
+visit.SetView3D(view)
+
 # loop over clipping planes
 first = True
 x_thresholds = numpy.arange(1, 20 + 1, 1)
@@ -34,13 +41,6 @@ z_thresholds = numpy.arange(1, 20 + 1, 1)
 for x_threshold in x_thresholds:
     for y_threshold in y_thresholds:
         for z_threshold in z_thresholds:
-
-            # set view
-            visit.ResetView()
-            view = GetView3D()
-            view.RotateAxis(0, 44)
-            view.RotateAxis(1, -23)
-            visit.SetView3D(view)
 
             # plot scalar
             visit.AddPlot("Pseudocolor", opts.scalar, 1, 1)
