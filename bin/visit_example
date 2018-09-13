@@ -12,7 +12,9 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--input-file")
 parser.add_argument("--output-file")
 parser.add_argument("--scalar")
-parser.add_argument("--resample-method", default="sph")
+parser.add_argument("--resample-method", choices=["sph", "test"], default=None)
+parser.add_argument("--resample-grid", type=int, nargs="+",
+                    default=[20, 20, 20])
 opts = parser.parse_args()
 
 # read data
@@ -34,13 +36,12 @@ view.RotateAxis(1, -23)
 visit.SetView3D(view)
 
 # loop over clipping planes
-first = True
-x_thresholds = numpy.arange(1, 20 + 1, 1)
-y_thresholds = numpy.arange(1, 20 + 1, 1)
-z_thresholds = numpy.arange(1, 20 + 1, 1)
-for x_threshold in x_thresholds:
-    for y_threshold in y_thresholds:
-        for z_threshold in z_thresholds:
+x_thresholds = numpy.arange(1, opts.resample_grid[0] + 1, 1)
+y_thresholds = numpy.arange(1, opts.resample_grid[1] + 1, 1)
+z_thresholds = numpy.arange(1, opts.resample_grid[2] + 1, 1)
+for i, x_threshold in enumerate(x_thresholds):
+    for j, y_threshold in enumerate(y_thresholds):
+        for k, z_threshold in enumerate(z_thresholds):
 
             # plot scalar
             visit.AddPlot("Pseudocolor", opts.scalar, 1, 1)
@@ -48,7 +49,11 @@ for x_threshold in x_thresholds:
             # format plot
             plot_attrs = visit.PseudocolorAttributes()
             plot_attrs.SetColorTableName("Greys")
-            plot_attrs.SetLightingFlag(0)
+            if opts.resample_method == None:
+                plot_attrs.opacityType = plot_attrs.Constant
+                plot_attrs.opacity = 0.15
+            else:
+                plot_attrs.SetLightingFlag(0)
             SetPlotOptions(plot_attrs)
 
             # resample
@@ -71,6 +76,8 @@ for x_threshold in x_thresholds:
                 resample_attrs.SetTensorSupportVariable("hh")
                 resample_attrs.SetWeightVariable("mass")
                 SetOperatorOptions(resample_attrs, 1)
+            elif opts.resample_method == None:
+                pass
             else:
                 raise NotImplementedError("Unknown {}".format(
                                               opts.resample_method))
@@ -85,11 +92,40 @@ for x_threshold in x_thresholds:
             clip_attrs.SetPlane2Origin(0, y_threshold, 0)
             clip_attrs.SetPlane3Origin(0, 0, z_threshold)
             SetOperatorOptions(clip_attrs, 1)
+            n = 1
+            if opts.resample_method == None and i > 0:
+                visit.AddOperator("Clip", 1)
+                SetActivePlots(0)
+                clip_x_attrs = visit.ClipAttributes()
+                clip_x_attrs.SetQuality(1)
+                clip_x_attrs.SetPlane1Origin(x_thresholds[i - 1], 0, 0)
+                clip_x_attrs.SetPlane1Normal(-1, 0, 0)
+                SetOperatorOptions(clip_x_attrs, n)
+                n += 1
+            if opts.resample_method == None and j > 0:
+                visit.AddOperator("Clip", 1)
+                SetActivePlots(0)
+                clip_y_attrs = visit.ClipAttributes()
+                clip_y_attrs.SetQuality(1)
+                clip_y_attrs.SetPlane1Origin(0, y_thresholds[j - 1], 0)
+                clip_y_attrs.SetPlane1Normal(0, -1, 0)
+                SetOperatorOptions(clip_y_attrs, n)
+                n += 1
+            if opts.resample_method == None and k > 0:
+                visit.AddOperator("Clip", 1)
+                SetActivePlots(0)
+                clip_z_attrs = visit.ClipAttributes()
+                clip_z_attrs.SetQuality(1)
+                clip_z_attrs.SetPlane1Origin(0, 0, z_thresholds[k - 1])
+                clip_z_attrs.SetPlane1Normal(0, 0, -1)
+                SetOperatorOptions(clip_z_attrs, n)
+                n += 1
 
             # plot mesh
-            visit.AddPlot("Mesh", "mesh", 1, 1)
-            mesh_attrs = visit.MeshAttributes()
-            SetPlotOptions(mesh_attrs)
+            if opts.resample_method != None:
+                visit.AddPlot("Mesh", "mesh", 1, 1)
+                mesh_attrs = visit.MeshAttributes()
+                SetPlotOptions(mesh_attrs)
 
             # draw
             visit.DrawPlots()
@@ -112,6 +148,5 @@ for x_threshold in x_thresholds:
                                           z_threshold, filename]))
                 fp.write("\n" + line)
 
-            ## remove clip
-            #visit.RemoveOperator(1)
+            # remove clip
             visit.DeleteAllPlots()
