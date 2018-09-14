@@ -14,7 +14,7 @@ An example script ``tools/install.sh`` shows how these dependencies (except VisI
 ## Copyright and license
 LANS has asserted copyright on the software package C17078, entitled Framework for Analysis and Visualization of Simulation Data.
 
-# Convert HACC GenericIO data to VTK formats
+# Example: Convert HACC GenericIO data to VTK formats
 
 There exists some excutables to convert HACC GenericIO files into VTK particle or rectilinear grid format after resampling.
 This allows HACC datasets to be loaded into downstream visualization toolkits such as VisIt or ParaView.
@@ -37,3 +37,10 @@ VisIt -nowin -cli -s bin/visit_sph_resample \
     --grid-max 20 20 20 \
     --resample-grid 20 20 20
 ```
+
+# Example: Cinema database with clipping planes
+
+There exists an executable ``bin/visit_cinema_clipper`` which generates a Cinema database.
+Thresholds on the ``x``, ``y``, and ``z`` planes are applied to view inside the simulation.
+
+The output Cinema database could be explored with the following HTML viewer: https://github.com/cinemascience/cinema_simpleviewers
