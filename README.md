@@ -29,8 +29,8 @@ python bin/tvtk_convert_hacc \
     --scalars vx vy vz hh mass
 VisIt -nowin -cli -s bin/visit_sph_resample \
     --input-file hacc_test.vtp \
-    --output-file-prefix hacc_grid \
-    --scalars vx vy vz \
+    --output-file-prefix hacc_vz \
+    --scalar vz \
     --tensor-support hh \
     --mass mass \
     --grid-min 0 0 0 \

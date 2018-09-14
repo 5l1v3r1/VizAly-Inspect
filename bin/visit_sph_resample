@@ -10,7 +10,7 @@ import visit
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--input-file")
 parser.add_argument("--output-file-prefix")
-parser.add_argument("--scalars", nargs="+")
+parser.add_argument("--scalar")
 parser.add_argument("--tensor-support")
 parser.add_argument("--mass")
 parser.add_argument("--resample-grid", type=int, nargs=3)
@@ -23,7 +23,7 @@ print("Reading data..")
 visit.OpenDatabase(opts.input_file)
 
 # loop over scalars to resample
-for scalar in opts.scalars:
+for scalar in [opts.scalar]:
     print("Resampling setup for {}...".format(scalar))
 
     # add plot for scalar
@@ -56,7 +56,7 @@ export_db_attrs.dirname = os.path.dirname(opts.output_file_prefix)
 export_db_attrs.filename = os.path.basename(opts.output_file_prefix)
 export_db_attrs.db_type = "VTK"
 export_db_attrs.db_type_fullname = "VTK_1.0"
-export_db_attrs.variables = (" ".join(opts.scalars))
+export_db_attrs.variables = (" ".join(opts.scalar))
 export_db_attrs.opts.types = (5)
 ExportDatabase(export_db_attrs)
 
