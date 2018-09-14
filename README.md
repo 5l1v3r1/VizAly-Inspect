@@ -20,13 +20,17 @@ An example workflow is depicited in the image and commands below.
 
 ![workflow_convert](docs/workflow_convert.png)
 ```
-tvtk_convert_hacc --help
+INPUT_FILE="m000.full.mpicosmo.100"
+python bin/tvtk_convert_hacc \
+    --input-file ${INPUT_FILE} \
+    --output-file hacc_test.vtp \
+    --scalars vx vy vz hh mass
 VisIt -nowin -cli -s bin/visit_sph_resample \
     --input-file hacc_test.vtp \
     --output-file-prefix hacc_grid \
     --scalars vx vy vz \
-    --mass mass \
     --tensor-support hh \
+    --mass mass \
     --grid-min 0 0 0 \
     --grid-max 20 20 20 \
     --resample-grid 20 20 20
