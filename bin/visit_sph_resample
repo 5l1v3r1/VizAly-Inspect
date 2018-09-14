@@ -1,0 +1,65 @@
+#! /usr/bin/env VisIt
+""" Performs SPH Resample in VisIt and writes a VTK rectilinear grid file.
+"""
+
+import argparse
+import os
+import visit
+
+# parse command line
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--input-file")
+parser.add_argument("--output-file-prefix")
+parser.add_argument("--scalar")
+parser.add_argument("--tensor-support")
+parser.add_argument("--mass")
+parser.add_argument("--resample-grid", type=int, nargs=3)
+parser.add_argument("--grid-min", type=float, nargs=3)
+parser.add_argument("--grid-max", type=float, nargs=3)
+opts = parser.parse_args()
+
+# read data
+print("Reading data..")
+visit.OpenDatabase(opts.input_file)
+
+# loop over scalars to resample
+for scalar in [opts.scalar]:
+    print("Resampling setup for {}...".format(scalar))
+
+    # add plot for scalar
+    visit.AddPlot("Pseudocolor", scalar, 0, 0)
+
+    # resample
+    visit.AddOperator("SPHResample", 0)
+    resample_attrs = visit.SPHResampleAttributes()
+    resample_attrs.SetMinX(opts.grid_min[0])
+    resample_attrs.SetMinY(opts.grid_min[1])
+    resample_attrs.SetMinZ(opts.grid_min[2])
+    resample_attrs.SetMaxX(opts.grid_max[0])
+    resample_attrs.SetMaxY(opts.grid_max[1])
+    resample_attrs.SetMaxZ(opts.grid_max[2])
+    resample_attrs.SetXnum(opts.resample_grid[0])
+    resample_attrs.SetYnum(opts.resample_grid[1])
+    resample_attrs.SetZnum(opts.resample_grid[2])
+    resample_attrs.SetTensorSupportVariable(opts.tensor_support)
+    resample_attrs.SetWeightVariable(opts.mass)
+    SetOperatorOptions(resample_attrs, 0)
+
+# draw
+print("Executing resampling...")
+visit.DrawPlots()
+
+# export to VTK format
+print("Exporting...")
+export_db_attrs = visit.ExportDBAttributes()
+export_db_attrs.dirname = os.path.dirname(opts.output_file_prefix)
+export_db_attrs.filename = os.path.basename(opts.output_file_prefix)
+export_db_attrs.db_type = "VTK"
+export_db_attrs.db_type_fullname = "VTK_1.0"
+export_db_attrs.variables = (" ".join(opts.scalar))
+export_db_attrs.opts.types = (5)
+ExportDatabase(export_db_attrs)
+
+# remove plots
+print("Done!")
+visit.DeleteAllPlots()
