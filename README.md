@@ -9,6 +9,8 @@ To execute the full breath of this toolkit, the following dependencies should be
   * VisIt
   * Python 3 packages from ``requirements.txt``
 
+An example script ``tools/install.sh`` shows how these dependencies (except VisIt) could be installed into a virtual environment.
+
 ## Copyright and license
 LANS has asserted copyright on the software package C17078, entitled Framework for Analysis and Visualization of Simulation Data.
 
