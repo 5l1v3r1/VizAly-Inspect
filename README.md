@@ -2,6 +2,13 @@
 
 This repository contains tools for comparing HACC and/or Nyx datasets.
 
+## Dependencies
+
+To execute the full breath of this toolkit, the following dependencies should be met:
+  * GenericIO
+  * VisIt
+  * Python 3 packages from ``requirements.txt``
+
 ## Copyright and license
 LANS has asserted copyright on the software package C17078, entitled Framework for Analysis and Visualization of Simulation Data.
 
