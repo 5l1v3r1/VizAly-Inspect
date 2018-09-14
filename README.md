@@ -21,5 +21,13 @@ An example workflow is depicited in the image and commands below.
 ![workflow_convert](docs/workflow_convert.png)
 ```
 tvtk_convert_hacc --help
-visit_sph_resample --help
+VisIt -nowin -cli -s bin/visit_sph_resample \
+    --input-file hacc_test.vtp \
+    --output-file-prefix hacc_grid \
+    --scalars vx vy vz \
+    --mass mass \
+    --tensor-support hh \
+    --grid-min 0 0 0 \
+    --grid-max 20 20 20 \
+    --resample-grid 20 20 20
 ```
