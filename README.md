@@ -42,7 +42,7 @@ VisIt -nowin -cli -s bin/visit_sph_resample \
 
 There exists an executable ``bin/visit_cinema_clipper`` which generates a Cinema database.
 Thresholds on the ``x``, ``y``, and ``z`` planes are applied to view inside the simulation.
-The output Cinema database could be explored with the following HTML viewer: https://github.com/cinemascience/cinema_simpleviewers
+The output Cinema database could be explored with a Cinema HTML viewer (https://github.com/cinemascience/cinema_simpleviewers).
 An example workflow is depicited in the image and commands below.
 ![workflow_cinema_clipper](docs/workflow_cinema_clipper.png)
 ```
