@@ -56,7 +56,7 @@ export_db_attrs.dirname = os.path.dirname(opts.output_file_prefix)
 export_db_attrs.filename = os.path.basename(opts.output_file_prefix)
 export_db_attrs.db_type = "VTK"
 export_db_attrs.db_type_fullname = "VTK_1.0"
-export_db_attrs.variables = (" ".join(opts.scalar))
+export_db_attrs.variables = (" ".join([opts.scalar]))
 export_db_attrs.opts.types = (5)
 ExportDatabase(export_db_attrs)
 
