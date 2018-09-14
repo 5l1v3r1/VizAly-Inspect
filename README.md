@@ -47,7 +47,7 @@ An example workflow is depicited in the image and commands below.
 ![workflow_cinema_clipper](docs/workflow_cinema_clipper.png)
 ```
 # HACC paticle data
-VisIt -nowin -cli -s bin/visit_cinema_clipper \
+VisIt -nowin -cli -s bin/visit_cinema_clip \
     --input-file hacc_test.vtp \
     --output-file hacc_vz_particles.cdb \
     --scalar vz \
@@ -56,7 +56,7 @@ VisIt -nowin -cli -s bin/visit_cinema_clipper \
     --grid-steps 20 20 20 \
     --particles
 # HACC cell data
-VisIt -nowin -cli -s bin/visit_cinema_clipper \
+VisIt -nowin -cli -s bin/visit_cinema_clip \
     --input-file hacc_vz.vtk \
     --output-file hacc_vz_resampled.cdb \
     --scalar vz \
