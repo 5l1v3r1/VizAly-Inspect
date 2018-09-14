@@ -1,0 +1,131 @@
+#! /usr/bin/env VisIt
+""" Creates a Cinema database of a dataset with different clipping planes.
+"""
+
+import argparse
+import numpy
+import visit
+
+# parse command line
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--input-file")
+parser.add_argument("--output-file")
+parser.add_argument("--scalar")
+parser.add_argument("--particles", action="store_true")
+parser.add_argument("--grid-min", type=float, nargs=3)
+parser.add_argument("--grid-max", type=float, nargs=3)
+parser.add_argument("--grid-steps", type=int, nargs=3)
+opts = parser.parse_args()
+
+# read data
+visit.OpenDatabase(opts.input_file)
+
+# write empty Cinema database
+os.mkdir(opts.output_file)
+data_file = opts.output_file + "/data.csv"
+with open(data_file, "w") as fp:
+    header = ",".join(map(str, ["x_threshold", "y_threshold", "z_threshold",
+                                "FILE"]))
+    fp.write(header)
+
+# set view
+visit.ResetView()
+view = GetView3D()
+view.RotateAxis(0, 44)
+view.RotateAxis(1, -23)
+visit.SetView3D(view)
+
+# loop over clipping planes
+x_step = float(opts.grid_max[0] - opts.grid_min[0]) / opts.grid_steps[0]
+x_thresholds = numpy.arange(opts.grid_min[0],
+                            opts.grid_max[0] + x_step, x_step)
+y_step = float(opts.grid_max[1] - opts.grid_min[1]) / opts.grid_steps[1]
+y_thresholds = numpy.arange(opts.grid_min[1],
+                            opts.grid_max[1] + y_step, y_step)
+z_step = float(opts.grid_max[2] - opts.grid_min[2]) / opts.grid_steps[2]
+z_thresholds = numpy.arange(opts.grid_min[2],
+                            opts.grid_max[2] + z_step, z_step)
+for i, x_threshold in enumerate(x_thresholds):
+    for j, y_threshold in enumerate(y_thresholds):
+        for k, z_threshold in enumerate(z_thresholds):
+
+            # plot scalar
+            visit.AddPlot("Pseudocolor", opts.scalar, 1, 1)
+
+            # format plot
+            plot_attrs = visit.PseudocolorAttributes()
+            plot_attrs.SetColorTableName("Greys")
+            if opts.particles:
+                plot_attrs.opacityType = plot_attrs.Constant
+                plot_attrs.opacity = 0.15
+            else:
+                plot_attrs.SetLightingFlag(0)
+            SetPlotOptions(plot_attrs)
+
+            # clip
+            visit.AddOperator("Clip", 1)
+            clip_attrs = visit.ClipAttributes()
+            clip_attrs.SetQuality(1)
+            clip_attrs.SetPlane2Status(1)
+            clip_attrs.SetPlane3Status(1)
+            clip_attrs.SetPlane1Origin(x_threshold, 0, 0)
+            clip_attrs.SetPlane2Origin(0, y_threshold, 0)
+            clip_attrs.SetPlane3Origin(0, 0, z_threshold)
+            SetOperatorOptions(clip_attrs, 1)
+            n = 1
+            if opts.particles and i > 0:
+                visit.AddOperator("Clip", 1)
+                SetActivePlots(0)
+                clip_x_attrs = visit.ClipAttributes()
+                clip_x_attrs.SetQuality(1)
+                clip_x_attrs.SetPlane1Origin(x_thresholds[i - 1], 0, 0)
+                clip_x_attrs.SetPlane1Normal(-1, 0, 0)
+                SetOperatorOptions(clip_x_attrs, n)
+                n += 1
+            if opts.particles and j > 0:
+                visit.AddOperator("Clip", 1)
+                SetActivePlots(0)
+                clip_y_attrs = visit.ClipAttributes()
+                clip_y_attrs.SetQuality(1)
+                clip_y_attrs.SetPlane1Origin(0, y_thresholds[j - 1], 0)
+                clip_y_attrs.SetPlane1Normal(0, -1, 0)
+                SetOperatorOptions(clip_y_attrs, n)
+                n += 1
+            if opts.particles and k > 0:
+                visit.AddOperator("Clip", 1)
+                SetActivePlots(0)
+                clip_z_attrs = visit.ClipAttributes()
+                clip_z_attrs.SetQuality(1)
+                clip_z_attrs.SetPlane1Origin(0, 0, z_thresholds[k - 1])
+                clip_z_attrs.SetPlane1Normal(0, 0, -1)
+                SetOperatorOptions(clip_z_attrs, n)
+                n += 1
+
+            # plot mesh
+            if not opts.particles:
+                visit.AddPlot("Mesh", "mesh", 1, 1)
+                mesh_attrs = visit.MeshAttributes()
+                SetPlotOptions(mesh_attrs)
+
+            # draw
+            visit.DrawPlots()
+
+            # get image path
+            filename = "test_{}_{}_{}.png".format(i, j, k)
+            path = opts.output_file + "/" + filename
+
+            # save
+            swin = SaveWindowAttributes()
+            swin.family = 0
+            swin.fileName = path
+            visit.SetSaveWindowAttributes(swin)
+            visit.SaveWindow()
+
+            # update Cinema database
+            with open(data_file, "a") as fp:
+                line = ",".join(map(str, [x_threshold, y_threshold,
+                                          z_threshold, filename]))
+                fp.write("\n" + line)
+
+            # remove clip
+            visit.DeleteAllPlots()
