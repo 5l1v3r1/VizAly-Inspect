@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--input-file")
 parser.add_argument("--output-file")
 parser.add_argument("--scalar")
+parser.add_argument("--mesh", default=None)
 parser.add_argument("--particles", action="store_true")
 parser.add_argument("--grid-min", type=float, nargs=3)
 parser.add_argument("--grid-max", type=float, nargs=3)
@@ -102,7 +103,7 @@ for i, x_threshold in enumerate(x_thresholds):
                 n += 1
 
             # plot mesh
-            if not opts.particles:
+            if not opts.particles and opts.mesh:
                 visit.AddPlot("Mesh", "mesh", 1, 1)
                 mesh_attrs = visit.MeshAttributes()
                 SetPlotOptions(mesh_attrs)
