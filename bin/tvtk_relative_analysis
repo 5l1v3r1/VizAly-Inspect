@@ -11,6 +11,7 @@ from tvtk.api import tvtk
 # operations that can be performed between two datasets
 _OPERATIONS = [
     "abs_diff",
+    "debug",
     "none",
     "rel_diff",
 ]
@@ -51,6 +52,13 @@ elif opts.operation == "abs_diff":
     result = abs(scalar_1 - scalar_2)
 elif opts.operation == "none":
     result = scalar_1
+elif opts.operation == "debug":
+    result = numpy.ones(domain_dimensions - 1)
+    result[0, 0, 0] = 10
+    result[1, 0, 0] = 20
+    result[0, 1, 0] = 30
+    result[0, 0, 1] = 40
+    result[10, 10, 10] = 50
 
 # create a (ndims, npoints) for spatial coordinates
 x, y, z = numpy.mgrid[0:128, 0:128, 0:128]
@@ -65,10 +73,17 @@ pts = pts.transpose(2, 1, 0, 3).copy()
 pts.shape = (int(pts.size / 3), 3)
 scalars = result.T.copy()
 
+print(scalars.shape)
+print(pts.shape)
+
 # create structured grid
 grid = tvtk.StructuredGrid(dimensions=domain_dimensions, points=pts)
-grid.cell_data.scalars = scalars.ravel()
-grid.cell_data.scalars.name = opts.operation
+arr = tvtk.FloatArray()
+arr.from_array(scalars.ravel())
+arr.name = opts.operation
+grid.cell_data.add_array(arr)
+#grid.cell_data.scalars = scalars.ravel()
+#grid.cell_data.scalars.name = opts.operation
 
 # write output file
 api.write_data(grid, opts.output_file)
