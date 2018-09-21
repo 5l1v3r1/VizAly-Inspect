@@ -69,3 +69,35 @@ mv hacc_vz_particles.cdb hacc_vz_resampled.cdb cinema_simpleviewers/spec_d/data
 ```
 Note you will need to edit the ``dataSets`` variable in ``cinema_simpleviewers/spec_d/index.html`` to include your datasets.
 Once you have done this, then point your browser to ``cinema_simpleviewers/spec_d/index.html``.
+
+# Example: Cinema database with thresholds
+
+There exists an executable ``bin/visit_cinema_threshold`` which generates a Cinema database.
+It thresholds on any variables in the file.
+Another executable ``bin/tvtk_relative_analysis`` can be used to compute metrics between two datasets (eg. relative error).
+An example workflow is depicted in the image and commands below.
+![workflow_cinema_threshold](docs/workflow_cinema_threshold.png)
+```
+# compute metrics
+python bin/tvtk_relative_analysis \
+    --input-file-1 ${INPUT_FILE_1} \
+    --input-file-2 ${INPUT_FILE_2} \
+    --output-file metrics_${PARAM}.vtk \
+    --scalar ${PARAM} \
+    --operation abs_diff_mag rel_diff_mag_pct scalar_1 scalar_2 debug
+# threshold
+VisIt -nowin -cli -s bin/visit_cinema_threshold \
+    --input-file metrics_${PARAM}.vtk \
+    --output-file metrics_${PARAM}.cdb \
+    --scalar ${PARAM} \
+    --metrics ${PARAM}:0,500,1000,5000,10000,25000,50000,100000 \
+              abs_diff_mag:0,500,1000,5000 \
+              rel_diff_mag_pct:0,1,2,5,10,25,50,100,200 \
+     --colorbar-min 1.0 \
+     --log
+# Cinema viewer
+git clone https://github.com/cinemascience/cinema_simpleviewers.git
+mv hacc_vz_particles.cdb hacc_vz_resampled.cdb cinema_simpleviewers/spec_d/data
+```
+Note you will need to edit the ``dataSets`` variable in ``cinema_simpleviewers/spec_d/index.html`` to include your datasets.
+Once you have done this, then point your browser to ``cinema_simpleviewers/spec_d/index.html``.

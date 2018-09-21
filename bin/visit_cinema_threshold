@@ -1,0 +1,101 @@
+#! /usr/bin/env VisIt
+""" Creates a Cinema database of a dataset with different clipping planes.
+"""
+
+import argparse
+import itertools
+import numpy
+import visit
+
+# parse command line
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--input-file")
+parser.add_argument("--output-file")
+parser.add_argument("--scalar")
+parser.add_argument("--metrics", nargs="+")
+parser.add_argument("--opacity", type=float, default=1.0)
+parser.add_argument("--log", action="store_true")
+parser.add_argument("--colorbar-min", type=float, default=None)
+opts = parser.parse_args()
+
+# read data
+visit.OpenDatabase(opts.input_file)
+
+# get metric thresholds
+n_metrics = len(opts.metrics)
+metric_names = []
+metrics_low_thresholds = []
+for n in range(n_metrics):
+    metric_names.append(":".join(opts.metrics[n].split(":")[:-1]))
+    vals = map(float, opts.metrics[n].split(":")[-1].split(","))
+    metrics_low_thresholds.append(vals)
+
+# get all combinations
+metrics_low_thresholds = list(itertools.product(*metrics_low_thresholds))
+
+# write empty Cinema database
+os.mkdir(opts.output_file)
+data_file = opts.output_file + "/data.csv"
+with open(data_file, "w") as fp:
+    metrics_headers = ["{}_threshold".format(m) for m in metric_names]
+    header = ",".join(map(str, metrics_headers + ["FILE"]))
+    fp.write(header)
+
+# set view
+visit.ResetView()
+view = GetView3D()
+view.RotateAxis(0, 44)
+view.RotateAxis(1, -23)
+visit.SetView3D(view)
+
+# loop over thresholds
+for j, metrics_thresholds in enumerate(metrics_low_thresholds):
+
+    # plot scalar
+    visit.AddPlot("Pseudocolor", opts.scalar, 1, 1)
+
+    # format plot
+    plot_attrs = visit.PseudocolorAttributes()
+    plot_attrs.SetColorTableName("inferno")
+    plot_attrs.opacityType = plot_attrs.Constant
+    plot_attrs.opacity = opts.opacity
+    plot_attrs.SetLightingFlag(1)
+    if opts.log:
+        plot_attrs.scaling = plot_attrs.Log
+    if opts.colorbar_min:
+        plot_attrs.minFlag = 1
+        plot_attrs.min = opts.colorbar_min
+    SetPlotOptions(plot_attrs)
+
+    # threshold
+    AddOperator("Threshold", 1)
+    threshold_attrs = ThresholdAttributes()
+    names = tuple(metric_names)
+    threshold_attrs.SetListedVarNames(names)
+    lows = tuple(metrics_thresholds)
+    threshold_attrs.SetLowerBounds(lows)
+    threshold_attrs.SetBoundsRange(tuple("{}:1e+37".format(l)
+                                   for l in lows))
+    SetOperatorOptions(threshold_attrs, 1)
+
+    # draw
+    visit.DrawPlots()
+
+    # get image path
+    filename = "test_{}.png".format(j)
+    path = opts.output_file + "/" + filename
+
+    # save
+    swin = SaveWindowAttributes()
+    swin.family = 0
+    swin.fileName = path
+    visit.SetSaveWindowAttributes(swin)
+    visit.SaveWindow()
+
+    # update Cinema database
+    with open(data_file, "a") as fp:
+        line = ",".join(map(str, lows + (filename,)))
+        fp.write("\n" + line)
+
+    # remove clip
+    visit.DeleteAllPlots()

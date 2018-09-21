@@ -10,17 +10,18 @@ from tvtk.api import tvtk
 
 # operations that can be performed between two datasets
 _OPERATIONS = [
-    "abs_diff",
+    "abs_diff_mag",
     "debug",
-    "rel_diff",
+    "rel_diff_mag",
+    "rel_diff_mag_pct",
     "scalar_1",
     "scalar_2",
 ]
 
 # parse command line
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("--input-file")
-parser.add_argument("--reference-file")
+parser.add_argument("--input-file-1")
+parser.add_argument("--input-file-2")
 parser.add_argument("--output-file")
 parser.add_argument("--scalar")
 parser.add_argument("--operations", choices=_OPERATIONS, nargs="+")
@@ -28,8 +29,8 @@ parser.add_argument("--level", type=int, default=None)
 opts = parser.parse_args()
 
 # load files
-fp_1 = yt.load(opts.input_file)
-fp_2 = yt.load(opts.reference_file)
+fp_1 = yt.load(opts.input_file_1)
+fp_2 = yt.load(opts.input_file_2)
 
 # read data
 level = opts.level if opts.level != None else fp_1.max_level
@@ -67,16 +68,18 @@ for operation in opts.operations:
 
     # perform operation
     name = operation
-    if operation == "rel_diff":
+    if operation == "rel_diff_mag":
         result = abs(scalar_1 - scalar_2) / (scalar_2)
-    elif operation == "abs_diff":
+    elif operation == "rel_diff_mag_pct":
+        result = abs(scalar_1 - scalar_2) / (scalar_2) * 100.0
+    elif operation == "abs_diff_mag":
         result = abs(scalar_1 - scalar_2)
     elif operation == "scalar_1":
         result = scalar_1
-        name = "{}_in".format(opts.scalar)
+        name = "{}_1".format(opts.scalar)
     elif operation == "scalar_2":
         result = scalar_2
-        name = "{}_ref".format(opts.scalar)
+        name = "{}_2".format(opts.scalar)
     elif operation == "debug":
         result = numpy.ones(domain_dimensions)
         result[0, 0, 0] = 10
