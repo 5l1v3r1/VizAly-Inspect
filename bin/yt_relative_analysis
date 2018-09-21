@@ -1,0 +1,26 @@
+#! /usr/bin/env VisIt
+""" Takes two boxlib3 files and performs some operation.
+"""
+
+import argparse
+import numpy
+import yt
+
+# operations that can be performed between two datasets
+_OPERATIONS = [
+    "rel_diff",
+]
+
+# parse command line
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--input-file")
+parser.add_argument("--reference-file")
+parser.add_argument("--output-file")
+parser.add_argument("--scalar")
+parser.add_argument("--operation", choices=_OPERATIONS, default=_OPERATIONS[0])
+opts = parser.parse_args()
+
+# load files
+fp_1 = yt.load(opts.input_file)
+fp_2 = yt.load(opts.reference_file)
+
