@@ -12,8 +12,9 @@ from tvtk.api import tvtk
 _OPERATIONS = [
     "abs_diff",
     "debug",
-    "none",
     "rel_diff",
+    "scalar_1",
+    "scalar_2",
 ]
 
 # parse command line
@@ -22,7 +23,7 @@ parser.add_argument("--input-file")
 parser.add_argument("--reference-file")
 parser.add_argument("--output-file")
 parser.add_argument("--scalar")
-parser.add_argument("--operation", choices=_OPERATIONS, default=_OPERATIONS[0])
+parser.add_argument("--operations", choices=_OPERATIONS, nargs="+")
 parser.add_argument("--level", type=int, default=None)
 opts = parser.parse_args()
 
@@ -41,24 +42,9 @@ data_2 = fp_2.covering_grid(level=level,
                             left_edge=domain_left_edge,
                             dims=domain_dimensions)
 
-# get scalar
+# get scalars
 scalar_1 = data_1[opts.scalar]
 scalar_2 = data_2[opts.scalar]
-
-# perform operation
-if opts.operation == "rel_diff":
-    result = abs(scalar_1 - scalar_2) / (scalar_2)
-elif opts.operation == "abs_diff":
-    result = abs(scalar_1 - scalar_2)
-elif opts.operation == "none":
-    result = scalar_1
-elif opts.operation == "debug":
-    result = numpy.ones(domain_dimensions)
-    result[0, 0, 0] = 10
-    result[1, 0, 0] = 20
-    result[0, 1, 0] = 30
-    result[0, 0, 1] = 40
-    result[10, 10, 10] = 50
 
 # create a (ndims, npoints) for spatial coordinates
 x, y, z = numpy.mgrid[0:domain_dimensions[0] + 1,
@@ -69,23 +55,42 @@ pts[..., 0] = x
 pts[..., 1] = y
 pts[..., 2] = z
 
-# We reorder the points, scalars and vectors so this is as per VTK's
-# requirement of x first, y next and z last.
+# reorder the points
 pts = pts.transpose(2, 1, 0, 3).copy()
 pts.shape = (int(pts.size / 3), 3)
-scalars = result.T.copy()
-
-print(scalars.shape)
-print(pts.shape)
 
 # create structured grid
 grid = tvtk.StructuredGrid(dimensions=domain_dimensions + 1, points=pts)
-arr = tvtk.FloatArray()
-arr.from_array(scalars.ravel())
-arr.name = opts.operation
-grid.cell_data.add_array(arr)
-#grid.cell_data.scalars = scalars.ravel()
-#grid.cell_data.scalars.name = opts.operation
+
+# loop over operations
+for operation in opts.operations:
+
+    # perform operation
+    name = operation
+    if operation == "rel_diff":
+        result = abs(scalar_1 - scalar_2) / (scalar_2)
+    elif operation == "abs_diff":
+        result = abs(scalar_1 - scalar_2)
+    elif operation == "scalar_1":
+        result = scalar_1
+        name = "{}_in".format(opts.scalar)
+    elif operation == "scalar_2":
+        result = scalar_2
+        name = "{}_ref".format(opts.scalar)
+    elif operation == "debug":
+        result = numpy.ones(domain_dimensions)
+        result[0, 0, 0] = 10
+        result[1, 0, 0] = 20
+        result[0, 1, 0] = 30
+        result[0, 0, 1] = 40
+        result[10, 10, 10] = 50
+    scalars = result.T.copy()
+
+    # add data to structured grid
+    arr = tvtk.FloatArray()
+    arr.from_array(scalars.ravel())
+    arr.name = name
+    grid.cell_data.add_array(arr)
 
 # write output file
 api.write_data(grid, opts.output_file)
