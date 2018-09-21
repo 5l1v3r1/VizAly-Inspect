@@ -53,7 +53,7 @@ elif opts.operation == "abs_diff":
 elif opts.operation == "none":
     result = scalar_1
 elif opts.operation == "debug":
-    result = numpy.ones(domain_dimensions - 1)
+    result = numpy.ones(domain_dimensions)
     result[0, 0, 0] = 10
     result[1, 0, 0] = 20
     result[0, 1, 0] = 30
@@ -61,7 +61,7 @@ elif opts.operation == "debug":
     result[10, 10, 10] = 50
 
 # create a (ndims, npoints) for spatial coordinates
-x, y, z = numpy.mgrid[0:128, 0:128, 0:128]
+x, y, z = numpy.mgrid[0:129, 0:129, 0:129]
 pts = numpy.empty(z.shape + (3,), dtype=float)
 pts[..., 0] = x
 pts[..., 1] = y
@@ -77,7 +77,7 @@ print(scalars.shape)
 print(pts.shape)
 
 # create structured grid
-grid = tvtk.StructuredGrid(dimensions=domain_dimensions, points=pts)
+grid = tvtk.StructuredGrid(dimensions=domain_dimensions + 1, points=pts)
 arr = tvtk.FloatArray()
 arr.from_array(scalars.ravel())
 arr.name = opts.operation
