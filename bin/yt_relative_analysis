@@ -1,13 +1,17 @@
-#! /usr/bin/env VisIt
+#! /usr/bin/env python
 """ Takes two boxlib3 files and performs some operation.
 """
 
 import argparse
 import numpy
 import yt
+from tvtk import api
+from tvtk.api import tvtk
 
 # operations that can be performed between two datasets
 _OPERATIONS = [
+    "abs_diff",
+    "none",
     "rel_diff",
 ]
 
@@ -18,9 +22,53 @@ parser.add_argument("--reference-file")
 parser.add_argument("--output-file")
 parser.add_argument("--scalar")
 parser.add_argument("--operation", choices=_OPERATIONS, default=_OPERATIONS[0])
+parser.add_argument("--level", type=int, default=None)
 opts = parser.parse_args()
 
 # load files
 fp_1 = yt.load(opts.input_file)
 fp_2 = yt.load(opts.reference_file)
 
+# read data
+level = opts.level if opts.level != None else fp_1.max_level
+domain_left_edge = fp_1.domain_left_edge
+domain_dimensions = fp_1.domain_dimensions
+data_1 = fp_1.covering_grid(level=level,
+                            left_edge=domain_left_edge,
+                            dims=domain_dimensions)
+data_2 = fp_2.covering_grid(level=level,
+                            left_edge=domain_left_edge,
+                            dims=domain_dimensions)
+
+# get scalar
+scalar_1 = data_1[opts.scalar]
+scalar_2 = data_2[opts.scalar]
+
+# perform operation
+if opts.operation == "rel_diff":
+    result = abs(scalar_1 - scalar_2) / (scalar_2)
+elif opts.operation == "abs_diff":
+    result = abs(scalar_1 - scalar_2)
+elif opts.operation == "none":
+    result = scalar_1
+
+# create a (ndims, npoints) for spatial coordinates
+x, y, z = numpy.mgrid[0:128, 0:128, 0:128]
+pts = numpy.empty(z.shape + (3,), dtype=float)
+pts[..., 0] = x
+pts[..., 1] = y
+pts[..., 2] = z
+
+# We reorder the points, scalars and vectors so this is as per VTK's
+# requirement of x first, y next and z last.
+pts = pts.transpose(2, 1, 0, 3).copy()
+pts.shape = (int(pts.size / 3), 3)
+scalars = result.T.copy()
+
+# create structured grid
+grid = tvtk.StructuredGrid(dimensions=domain_dimensions, points=pts)
+grid.cell_data.scalars = scalars.ravel()
+grid.cell_data.scalars.name = opts.operation
+
+# write output file
+api.write_data(grid, opts.output_file)
